@@ -142,6 +142,9 @@ async def export_to_galaxy(request: Request):
         logger.info(f"Uploaded: {upload_info['outputs'][0]['name']}, ID: {upload_info['outputs'][0]['id']}")
 
         return {"message": "Data received successfully"}
+    except ConnectionError as e:
+        logger.error(f"Connection error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to establish a new connection: {e}")
     except Exception as e:
         logger.error(f"An error occurred: {e}")
-        return {"error": str(e)}, 500
+        raise HTTPException(status_code=500, detail=str(e))
