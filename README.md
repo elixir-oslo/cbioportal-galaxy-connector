@@ -90,4 +90,8 @@ curl -X POST "http://127.0.0.1:8000/export-to-galaxy" -H "Content-Type: applicat
     ```sh
     docker run -d -p 3001:3001 --name galaxy-data-exporter -e GALAXY_URL='http://your-galaxy-instance-url' galaxy-data-exporter
     ```
+   
+Inside the container, the application run on port 3001.
+The following environment variables can be set:
+- `GALAXY_URL`: URL of the Galaxy instance. (Can be on another server)
 
