@@ -1,4 +1,5 @@
 import tempfile
+from datetime import datetime
 from io import StringIO
 import time
 import os
@@ -100,13 +101,22 @@ def prepare_data(tab_string):
     return tab_delimited_string
 
 
-def upload_data_string(galaxy_instance, history_id, data_string, file_name='data.txt'):
-    with tempfile.NamedTemporaryFile(delete=False, mode='w', suffix=file_name) as tmp_file:
+def upload_data_string(galaxy_instance, history_id, data_string, study_id, case_id, file_suffix='data.txt'):
+
+    current_time = datetime.now().strftime("%Y%m%dT%H%M")
+
+    if case_id:
+        file_name = f"{current_time}_{study_id}_{case_id}_{file_suffix}"
+    else:
+        file_name = f"{current_time}_{study_id}_{file_suffix}"
+
+    with tempfile.NamedTemporaryFile(delete=True, mode='w', suffix=file_name) as tmp_file:
         tmp_file.write(data_string)
         tmp_file_path = tmp_file.name
+        upload_info = galaxy_instance.tools.upload_file(tmp_file_path, history_id, file_name=file_name)
 
-    upload_info = galaxy_instance.tools.upload_file(tmp_file_path, history_id)
     return upload_info
+
 
 @app.post("/export-to-galaxy")
 async def export_to_galaxy(request: Request):
@@ -116,6 +126,8 @@ async def export_to_galaxy(request: Request):
 
         galaxy_token = data.get('galaxyToken')
         galaxy_history_name = data.get('galaxyHistoryName')
+        cbioportal_study_id = data.get('studyId')
+        cbioportal_case_id = data.get('caseId')
 
         if not galaxy_token or not galaxy_history_name or 'data' not in data:
             raise ValueError("Missing required fields in the request.")
@@ -134,11 +146,12 @@ async def export_to_galaxy(request: Request):
 
         logger.info(f"Working with history ID: {history_id}")
 
-        data_modified = prepare_data(data['data'])
-        logger.info("Data prepared successfully")
+        # data_modified = prepare_data(data['data'])
+        # logger.info("Data prepared successfully")
+        data_modified = data.get('data')
 
         # Upload the file to Galaxy
-        upload_info = upload_data_string(gi, history_id, data_modified)
+        upload_info = upload_data_string(gi, history_id, data_modified, cbioportal_study_id, cbioportal_case_id)
         logger.info(f"Uploaded: {upload_info['outputs'][0]['name']}, ID: {upload_info['outputs'][0]['id']}")
 
         return {"message": "Data received successfully"}
