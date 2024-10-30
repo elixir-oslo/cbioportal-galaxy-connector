@@ -1,13 +1,14 @@
-import tempfile
-from datetime import datetime
-from io import StringIO
-import time
+# cbioportal_to_galaxy_handler.py
+
 import os
-import pandas as pd
+import logging
 from fastapi import HTTPException
 from bioblend.galaxy import GalaxyInstance
 from requests.exceptions import ConnectionError
-import logging
+from datetime import datetime
+from io import StringIO
+import tempfile
+import pandas as pd
 from urllib.parse import urlparse
 
 logger = logging.getLogger("uvicorn.error")
@@ -32,26 +33,6 @@ def get_galaxy_instance(url, key, max_retries=5, delay=5):
             else:
                 raise HTTPException(status_code=500, detail=f"Failed to establish a new connection: {e}")
 
-def prepare_data(tab_string):
-    file_like_object = StringIO(tab_string)
-    data = pd.read_csv(file_like_object, sep='\t', header=0)
-    data[['patient_id', 'sample_id']] = data['Samples'].str.split('-', n=1, expand=True)
-    data['mutation_id'] = data['patient_id'].astype(str) + ':' + data['Chromosome'].astype(str) + ':' + data[
-        'Start Pos'].astype(str) + ':' + data['Ref'].astype(str)
-
-    data = data.dropna(subset=['Variant Reads'])
-    data['Variant Reads'] = data['Variant Reads'].astype(int)
-    data = data.dropna(subset=['Ref Reads'])
-    data['Ref Reads'] = data['Ref Reads'].astype(int)
-
-    data = data.rename(columns={'Ref Reads': 'ref_counts'})
-    data = data.rename(columns={'Variant Reads': 'alt_counts'})
-
-    buffer = StringIO()
-    data.to_csv(buffer, sep='\t', index=False, header=True)
-    tab_delimited_string = buffer.getvalue()
-    return tab_delimited_string
-
 def upload_data_string(galaxy_instance, history_id, data_string, study_id, case_id, file_suffix='data.txt'):
     current_time = datetime.now().strftime("%Y%m%dT%H%M")
     if case_id:
@@ -64,3 +45,40 @@ def upload_data_string(galaxy_instance, history_id, data_string, study_id, case_
         tmp_file_path = tmp_file.name
         upload_info = galaxy_instance.tools.upload_file(tmp_file_path, history_id, file_name=file_name)
     return upload_info
+
+async def export_to_galaxy(request, galaxy_url):
+    try:
+        data = await request.json()
+        logger.debug(f"Received data: {data}")
+
+        galaxy_token = data.get('galaxyToken')
+        galaxy_history_name = data.get('galaxyHistoryName')
+        cbioportal_study_id = data.get('studyId')
+        cbioportal_case_id = data.get('caseId')
+
+        if not galaxy_token or not galaxy_history_name or 'data' not in data:
+            raise ValueError("Missing required fields in the request.")
+
+        gi = get_galaxy_instance(galaxy_url, galaxy_token)
+        logger.info("Created GalaxyInstance successfully")
+
+        histories = gi.histories.get_histories(name=galaxy_history_name)
+        if histories:
+            history_id = histories[0]['id']
+        else:
+            history = gi.histories.create_history(name=galaxy_history_name)
+            history_id = history['id']
+
+        logger.info(f"Working with history ID: {history_id}")
+
+        data_modified = data.get('data')
+        upload_info = upload_data_string(gi, history_id, data_modified, cbioportal_study_id, cbioportal_case_id)
+        logger.info(f"Uploaded: {upload_info['outputs'][0]['name']}, ID: {upload_info['outputs'][0]['id']}")
+
+        return {"message": "Data received successfully"}
+    except ConnectionError as e:
+        logger.error(f"Connection error: {e}")
+        raise HTTPException(status_code=500, detail=f"Failed to establish a new connection: {e}")
+    except Exception as e:
+        logger.error(f"An error occurred: {e}")
+        raise HTTPException(status_code=500, detail=str(e))
