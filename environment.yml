@@ -1,10 +1,5 @@
-name: cbioportal-galaxy-connector
-channels:
-  - conda-forge
-  - bioconda
-dependencies:
-  - bioblend
-  - fastapi
-  - pandas
-  - python=3.8
-  - uvicorn
+bioblend
+fastapi
+pandas
+uvicorn
+python-multipart
