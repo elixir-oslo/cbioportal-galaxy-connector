@@ -39,9 +39,9 @@ ENV PATH="/opt/venv/bin:$PATH"
 # Install any needed packages specified in requirements.txt
 RUN /opt/venv/bin/pip install --no-cache-dir -r /cbioportal-core/requirements.txt
 
-# Install dependencies from environment.yml
-COPY environment.yml .
-RUN /opt/venv/bin/pip install --no-cache-dir -r environment.yml
+# Install dependencies from environment.txt
+COPY environment.txt .
+RUN /opt/venv/bin/pip install --no-cache-dir -r environment.txt
 
 # Copy scripts and make them executable
 RUN cp -R /cbioportal-core/scripts/ scripts/
