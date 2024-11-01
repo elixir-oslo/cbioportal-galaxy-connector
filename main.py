@@ -33,10 +33,14 @@ except ValueError as e:
 # Get the study directory from the environment variables
 path_study_directory = os.getenv('STUDY_DIRECTORY', '/study').strip()
 
+# Get cBioPortal URL from the environment variables
+cbioportal_url = os.getenv('CBIOPORTAL_URL', 'http://localhost:8080').strip()
+
+
 @app.post("/export-to-galaxy")
 async def export_to_galaxy_endpoint(request: Request):
     return await export_to_galaxy(request, galaxy_url)
 
 @app.post("/export-timeline-to-cbioportal")
 async def export_timeline_to_cbioportal_endpoint(request: Request):
-    return await export_timeline_to_cbioportal(request, path_study_directory)
+    return await export_timeline_to_cbioportal(request, path_study_directory, cbioportal_url)
