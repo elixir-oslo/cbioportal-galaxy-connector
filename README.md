@@ -30,7 +30,7 @@ Galaxy Data Exporter is a Python-based application that allows users to export d
 
 2. Create a conda environment from environment file and activate it:
     ```sh
-    conda create --name galaxy-data-exporter --file environment.yml
+    conda create --name galaxy-data-exporter --file environment.yaml
     conda activate galaxy-data-exporter
     ```
 
