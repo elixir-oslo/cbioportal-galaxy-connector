@@ -31,13 +31,13 @@ def merge_data_timeline(new_data: str, path_data_file: str) -> pd.DataFrame:
 
 def incremental_load_data_to_cbioportal(path_study_id_directory: str, cbioportal_url: str) -> list:
     try:
-        # Construct the command
+        # Construct the load command
         command = ["python", "/scripts/importer/metaImport.py",
                    "-d", path_study_id_directory,
                    "-u", cbioportal_url,
                    "-o"]
 
-        # Run the command
+        # Run the load command
         result = subprocess.run(command, capture_output=True, text=True)
 
         # Check if the command was successful
@@ -48,8 +48,24 @@ def incremental_load_data_to_cbioportal(path_study_id_directory: str, cbioportal
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
+def clear_cache_cbioportal(cbioportal_url: str, api_key: str) -> list:
+    try:
+        # Clear cBioportal cache
+        command = ["curl", "-X", "DELETE",
+                   f"{cbioportal_url}/api/cache",
+                   "-H", f"X-API-KEY: {api_key}"]
 
-async def export_timeline_to_cbioportal(request: Request, path_study_directory: str, cbioportal_url: str) -> dict:
+        result = subprocess.run(command, capture_output=True, text=True)
+
+        if result.returncode != 0:
+            raise HTTPException(status_code=500, detail=result.stderr)
+
+        return {"output": result.stdout}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+async def export_timeline_to_cbioportal(request: Request, path_study_directory: str, cbioportal_url: str, api_key: str) -> dict:
     try:
         data = await request.json()
         data_content = data.get('data_content')
@@ -76,6 +92,8 @@ async def export_timeline_to_cbioportal(request: Request, path_study_directory: 
             f.write(meta_content)
 
         load_message = incremental_load_data_to_cbioportal(path_study_id_directory, cbioportal_url)
+
+        clear_cache_message = clear_cache_cbioportal(cbioportal_url, api_key)
 
 
         return {"message": "Data successfully exported to cBioPortal."}
