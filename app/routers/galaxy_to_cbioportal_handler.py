@@ -1,9 +1,11 @@
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 import os
 import logging
 from io import StringIO
 import pandas as pd
 from services.importer_common import clear_cache_cbioportal, incremental_load_data_to_cbioportal
+from dependencies import get_env_vars
+
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -31,8 +33,7 @@ def merge_data_timeline(new_data: str, data_file_path: str) -> pd.DataFrame:
 
 
 @router.post("/export-timeline-to-cbioportal")
-async def export_timeline_to_cbioportal(request: Request, study_directory_path: str, cbioportal_url: str,
-                                        api_key: str) -> dict:
+async def export_timeline_to_cbioportal(request: Request, env_vars: dict = Depends(get_env_vars)) -> dict:
     try:
         data = await request.json()
         data_content = data.get('dataContent')
@@ -46,7 +47,7 @@ async def export_timeline_to_cbioportal(request: Request, study_directory_path: 
             raise HTTPException(status_code=400,
                                 detail="Missing required fields: dataContent, metaContent, caseId, or studyId")
 
-        study_id_directory_path = os.path.join(study_directory_path, 'incremental_import', study_id)
+        study_id_directory_path = str(os.path.join(env_vars['study_directory_path'], 'incremental_import', study_id))
         meta_outfile_path = os.path.join(study_id_directory_path, f"meta_timeline_{suffix}.txt")
         data_outfile_path = os.path.join(study_id_directory_path, f"data_timeline_{suffix}.txt")
 
@@ -58,10 +59,10 @@ async def export_timeline_to_cbioportal(request: Request, study_directory_path: 
         with open(meta_outfile_path, 'w') as f:
             f.write(meta_content)
 
-        load_message = incremental_load_data_to_cbioportal(study_id_directory_path, cbioportal_url)
+        load_message = incremental_load_data_to_cbioportal(study_id_directory_path, env_vars['cbioportal_url'])
         logger.debug(f"Load message: {load_message}")
 
-        clear_cache_message = clear_cache_cbioportal(cbioportal_url, api_key)
+        clear_cache_message = clear_cache_cbioportal(env_vars['cbioportal_url'], env_vars['api_key'])
         logger.debug(f"Clear cache message: {clear_cache_message}")
 
         return {"message": "Data successfully exported to cBioPortal."}
