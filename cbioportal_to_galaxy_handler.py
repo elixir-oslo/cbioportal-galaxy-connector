@@ -1,18 +1,13 @@
-# cbioportal_to_galaxy_handler.py
-
 import os
 import logging
 import time
 from typing import Dict
-
 from fastapi import HTTPException, Request
 from bioblend.galaxy import GalaxyInstance
 from requests.exceptions import ConnectionError
 from datetime import datetime
 import tempfile
 from urllib.parse import urlparse
-
-
 
 logger = logging.getLogger("__name__")
 

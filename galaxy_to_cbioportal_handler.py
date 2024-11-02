@@ -1,8 +1,6 @@
-# galaxy_to_cbioportal_handler.py
 import os
 import logging
 from io import StringIO
-
 import pandas as pd
 from fastapi import HTTPException, Request
 from importer_common import clear_cache_cbioportal, incremental_load_data_to_cbioportal
@@ -10,65 +8,61 @@ from importer_common import clear_cache_cbioportal, incremental_load_data_to_cbi
 logger = logging.getLogger(__name__)
 
 
-def merge_data_timeline(new_data: str, path_data_file: str) -> pd.DataFrame:
-    # Asign the data to a pandas dataframe
+def merge_data_timeline(new_data: str, data_file_path: str) -> pd.DataFrame:
     df_input = pd.read_csv(StringIO(new_data), sep='\t', header=0)
 
     # If a file exists, read it and merge the new data with the previous data
-    if os.path.exists(path_data_file):
-        df_previous_data = pd.read_csv(path_data_file, sep="\t")
+    if os.path.exists(data_file_path):
+        df_previous = pd.read_csv(data_file_path, sep="\t")
         try:
-            df_previous_data = df_previous_data[~df_previous_data["PATIENT_ID"].isin(df_input["PATIENT_ID"])]
-            df_combined = pd.concat([df_previous_data, df_input])
+            df_previous = df_previous[~df_previous["PATIENT_ID"].isin(df_input["PATIENT_ID"])]
+            df_combined = pd.concat([df_previous, df_input])
         # Exception handling for the case where there is no PATIENT_ID column have a warning log message that previous file will be overwritten
         except KeyError:
-            logger.warning(f"Previous file {path_data_file} does not have a PATIENT_ID column. Previous file will be overwritten.")
+            logger.warning(
+                f"Previous file {data_file_path} does not have a PATIENT_ID column. Previous file will be overwritten.")
             df_combined = df_input
     else:
         df_combined = df_input
 
-    # Remove duplicates rows
     df_combined = df_combined.drop_duplicates()
-
     return df_combined
 
 
-async def export_timeline_to_cbioportal(request: Request, path_study_directory: str, cbioportal_url: str, api_key: str) -> dict:
+async def export_timeline_to_cbioportal(request: Request, study_directory_path: str, cbioportal_url: str,
+                                        api_key: str) -> dict:
     try:
         data = await request.json()
-        data_content = data.get('data_content')
-        meta_content = data.get('meta_content')
-        study_id = data.get('study_id')
-        case_id = data.get('case_id')
+        data_content = data.get('dataContent')
+        meta_content = data.get('metaContent')
+        study_id = data.get('studyId')
+        case_id = data.get('caseId')
         suffix = data.get('suffix')
 
         if not data_content or not meta_content or not study_id or not case_id or not suffix:
-            logger.error("Missing required fields: data_content, meta_content, case_id, or study_id")
-            raise HTTPException(status_code=400, detail="Missing required fields: data_content, meta_content, case_id, or study_id")
+            logger.error("Missing required fields: dataContent, metaContent, caseId, or studyId")
+            raise HTTPException(status_code=400,
+                                detail="Missing required fields: dataContent, metaContent, caseId, or studyId")
 
-        path_study_id_directory = os.path.join(path_study_directory, 'incremental_import', study_id)
-        path_meta_outfile = os.path.join(path_study_id_directory, f"meta_timeline_{suffix}.txt")
-        path_data_outfile = os.path.join(path_study_id_directory, f"data_timeline_{suffix}.txt")
+        study_id_directory_path = os.path.join(study_directory_path, 'incremental_import', study_id)
+        meta_outfile_path = os.path.join(study_id_directory_path, f"meta_timeline_{suffix}.txt")
+        data_outfile_path = os.path.join(study_id_directory_path, f"data_timeline_{suffix}.txt")
 
-        df_dataframe = merge_data_timeline(data_content, path_data_outfile)
+        df = merge_data_timeline(data_content, data_outfile_path)
 
-        # Create the output directory if it does not exist
-        os.makedirs(path_study_id_directory, exist_ok=True)
+        os.makedirs(study_id_directory_path, exist_ok=True)
 
-        # Write the data and meta files
-        df_dataframe.to_csv(path_data_outfile, sep='\t', index=False)
-        with open(path_meta_outfile, 'w') as f:
+        df.to_csv(data_outfile_path, sep='\t', index=False)
+        with open(meta_outfile_path, 'w') as f:
             f.write(meta_content)
 
-        load_message = incremental_load_data_to_cbioportal(path_study_id_directory, cbioportal_url)
+        load_message = incremental_load_data_to_cbioportal(study_id_directory_path, cbioportal_url)
         logger.debug(f"Load message: {load_message}")
 
         clear_cache_message = clear_cache_cbioportal(cbioportal_url, api_key)
         logger.debug(f"Clear cache message: {clear_cache_message}")
 
-
         return {"message": "Data successfully exported to cBioPortal."}
-
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
