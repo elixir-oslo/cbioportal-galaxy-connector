@@ -32,9 +32,11 @@ except ValueError as e:
 
 # Get the study directory from the environment variables
 path_study_directory = os.getenv('STUDY_DIRECTORY', '/study').strip()
+logger.info(f"Using study directory: {path_study_directory}")
 
 # Get cBioPortal URL from the environment variables
 cbioportal_url = os.getenv('CBIOPORTAL_URL', 'http://localhost:8080').strip()
+logger.info(f"Using cBioPortal URL: {cbioportal_url}")
 cbioportal_cache_api_key = os.getenv('CBIOPORTAL_CACHE_API_KEY', 'fd15f1ae-66f2-4b8a-8d54-fb899b03557e').strip()
 
 

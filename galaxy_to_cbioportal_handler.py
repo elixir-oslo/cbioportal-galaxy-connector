@@ -1,10 +1,14 @@
 # galaxy_to_cbioportal_handler.py
 import os
-import subprocess
+import logging
 from io import StringIO
 
 import pandas as pd
 from fastapi import HTTPException, Request
+from importer_common import clear_cache_cbioportal, incremental_load_data_to_cbioportal
+
+logger = logging.getLogger(__name__)
+
 
 def merge_data_timeline(new_data: str, path_data_file: str) -> pd.DataFrame:
     # Asign the data to a pandas dataframe
@@ -18,7 +22,7 @@ def merge_data_timeline(new_data: str, path_data_file: str) -> pd.DataFrame:
             df_combined = pd.concat([df_previous_data, df_input])
         # Exception handling for the case where there is no PATIENT_ID column have a warning log message that previous file will be overwritten
         except KeyError:
-            print("Previous data file does not contain a PATIENT_ID column. Overwriting the previous data file.")
+            logger.warning(f"Previous file {path_data_file} does not have a PATIENT_ID column. Previous file will be overwritten.")
             df_combined = df_input
     else:
         df_combined = df_input
@@ -27,42 +31,6 @@ def merge_data_timeline(new_data: str, path_data_file: str) -> pd.DataFrame:
     df_combined = df_combined.drop_duplicates()
 
     return df_combined
-
-
-def incremental_load_data_to_cbioportal(path_study_id_directory: str, cbioportal_url: str) -> list:
-    try:
-        # Construct the load command
-        command = ["python", "/scripts/importer/metaImport.py",
-                   "-d", path_study_id_directory,
-                   "-u", cbioportal_url,
-                   "-o"]
-
-        # Run the load command
-        result = subprocess.run(command, capture_output=True, text=True)
-
-        # Check if the command was successful
-        if result.returncode != 0:
-            raise HTTPException(status_code=500, detail=result.stderr)
-
-        return {"output": result.stdout}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-
-def clear_cache_cbioportal(cbioportal_url: str, api_key: str) -> list:
-    try:
-        # Clear cBioportal cache
-        command = ["curl", "-X", "DELETE",
-                   f"{cbioportal_url}/api/cache",
-                   "-H", f"X-API-KEY: {api_key}"]
-
-        result = subprocess.run(command, capture_output=True, text=True)
-
-        if result.returncode != 0:
-            raise HTTPException(status_code=500, detail=result.stderr)
-
-        return {"output": result.stdout}
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 async def export_timeline_to_cbioportal(request: Request, path_study_directory: str, cbioportal_url: str, api_key: str) -> dict:
@@ -75,6 +43,7 @@ async def export_timeline_to_cbioportal(request: Request, path_study_directory: 
         suffix = data.get('suffix')
 
         if not data_content or not meta_content or not study_id or not case_id or not suffix:
+            logger.error("Missing required fields: data_content, meta_content, case_id, or study_id")
             raise HTTPException(status_code=400, detail="Missing required fields: data_content, meta_content, case_id, or study_id")
 
         path_study_id_directory = os.path.join(path_study_directory, 'incremental_import', study_id)
@@ -92,32 +61,14 @@ async def export_timeline_to_cbioportal(request: Request, path_study_directory: 
             f.write(meta_content)
 
         load_message = incremental_load_data_to_cbioportal(path_study_id_directory, cbioportal_url)
+        logger.debug(f"Load message: {load_message}")
 
         clear_cache_message = clear_cache_cbioportal(cbioportal_url, api_key)
+        logger.debug(f"Clear cache message: {clear_cache_message}")
 
 
         return {"message": "Data successfully exported to cBioPortal."}
 
-
-
     except Exception as e:
+        logger.error(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
-
-
-
-    # try:
-    #     # Construct the command
-    #     command = ["python", "/scripts/importer/metaImport.py"] + args
-    #
-    #     print(command)
-    #
-    #     # Run the command
-    #     result = subprocess.run(command, capture_output=True, text=True)
-    #
-    #     # Check if the command was successful
-    #     if result.returncode != 0:
-    #         raise HTTPException(status_code=500, detail=result.stderr)
-    #
-    #     return {"output": result.stdout}
-    # except Exception as e:
-    #     raise HTTPException(status_code=500, detail=str(e))
