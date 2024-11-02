@@ -14,8 +14,8 @@ def merge_data_timeline(new_data: str, path_data_file: str) -> pd.DataFrame:
     if os.path.exists(path_data_file):
         df_previous_data = pd.read_csv(path_data_file, sep="\t")
         try:
-            # Overwrite rows with the same PATIENT_ID
-            df_combined = pd.concat([df_previous_data, df_input]).drop_duplicates(subset=["PATIENT_ID"], keep='last')
+            df_previous_data = df_previous_data[~df_previous_data["PATIENT_ID"].isin(df_input["PATIENT_ID"])]
+            df_combined = pd.concat([df_previous_data, df_input])
         # Exception handling for the case where there is no PATIENT_ID column have a warning log message that previous file will be overwritten
         except KeyError:
             print("Previous data file does not contain a PATIENT_ID column. Overwriting the previous data file.")
