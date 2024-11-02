@@ -1,16 +1,16 @@
-import os
+from typing import Dict
+
+from fastapi import APIRouter, HTTPException, Request
 import logging
 import time
-from typing import Dict
-from fastapi import HTTPException, Request
 from bioblend.galaxy import GalaxyInstance
 from requests.exceptions import ConnectionError
 from datetime import datetime
 import tempfile
 from urllib.parse import urlparse
 
-logger = logging.getLogger("__name__")
-
+router = APIRouter()
+logger = logging.getLogger(__name__)
 
 def validate_and_fix_url(url: str) -> str:
     parsed = urlparse(url)
@@ -49,8 +49,8 @@ def upload_data_string(galaxy_instance: GalaxyInstance, history_id: str, data_st
         upload_info = galaxy_instance.tools.upload_file(tmp_file_path, history_id, file_name=file_name)
     return upload_info
 
-
-async def export_to_galaxy(request: Request, galaxy_url: str) -> Dict[str, str]:
+@router.post("/export-to-galaxy")
+async def export_to_galaxy(request: Request, galaxy_url: str) -> dict:
     try:
         data = await request.json()
         logger.debug(f"Received data: {data}")

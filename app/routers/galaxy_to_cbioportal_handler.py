@@ -1,10 +1,11 @@
+from fastapi import APIRouter, HTTPException, Request
 import os
 import logging
 from io import StringIO
 import pandas as pd
-from fastapi import HTTPException, Request
-from importer_common import clear_cache_cbioportal, incremental_load_data_to_cbioportal
+from services.importer_common import clear_cache_cbioportal, incremental_load_data_to_cbioportal
 
+router = APIRouter()
 logger = logging.getLogger(__name__)
 
 
@@ -29,6 +30,7 @@ def merge_data_timeline(new_data: str, data_file_path: str) -> pd.DataFrame:
     return df_combined
 
 
+@router.post("/export-timeline-to-cbioportal")
 async def export_timeline_to_cbioportal(request: Request, study_directory_path: str, cbioportal_url: str,
                                         api_key: str) -> dict:
     try:

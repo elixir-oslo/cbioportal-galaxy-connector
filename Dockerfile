@@ -40,11 +40,11 @@ ENV PATH="/opt/venv/bin:$PATH"
 RUN /opt/venv/bin/pip install --no-cache-dir -r /cbioportal-core/requirements.txt
 
 # Install dependencies from environment.txt
-COPY environment.txt .
-RUN /opt/venv/bin/pip install --no-cache-dir -r environment.txt
+COPY requirements.txt .
+RUN /opt/venv/bin/pip install --no-cache-dir -r requirements.txt
 
 # Copy scripts and make them executable
-RUN cp -R /cbioportal-core/scripts/ scripts/
+RUN cp -R /cbioportal-core/scripts/ /scripts/
 RUN chmod -R a+x /scripts/
 
 # Copy the built JAR file from the first stage
@@ -58,15 +58,15 @@ ENV PORTAL_HOME=/
 # This file is empty. It has to be overridden by bind mounting the actual application.properties
 RUN touch /application.properties
 
-# Copy the rest of the application code to /server
-COPY . /server/
+# Copy the rest of the application code to /app
+COPY app/ /app/
 
-# Copy the entrypoint script to /server
-COPY entrypoint.sh /server/entrypoint.sh
+# Copy the entrypoint script to /app
+COPY entrypoint.sh /entrypoint.sh
 
 # Ensure the entrypoint script is executable
-RUN chmod +x /server/entrypoint.sh
+RUN chmod +x /entrypoint.sh
 
 EXPOSE 3001
 
-ENTRYPOINT ["/server/entrypoint.sh"]
+ENTRYPOINT ["/entrypoint.sh"]
