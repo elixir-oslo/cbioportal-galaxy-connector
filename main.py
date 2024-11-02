@@ -35,6 +35,7 @@ path_study_directory = os.getenv('STUDY_DIRECTORY', '/study').strip()
 
 # Get cBioPortal URL from the environment variables
 cbioportal_url = os.getenv('CBIOPORTAL_URL', 'http://localhost:8080').strip()
+cbioportal_cache_api_key = os.getenv('CBIOPORTAL_CACHE_API_KEY', 'fd15f1ae-66f2-4b8a-8d54-fb899b03557e').strip()
 
 
 @app.post("/export-to-galaxy")
@@ -43,4 +44,4 @@ async def export_to_galaxy_endpoint(request: Request):
 
 @app.post("/export-timeline-to-cbioportal")
 async def export_timeline_to_cbioportal_endpoint(request: Request):
-    return await export_timeline_to_cbioportal(request, path_study_directory, cbioportal_url)
+    return await export_timeline_to_cbioportal(request, path_study_directory, cbioportal_url, cbioportal_cache_api_key)
