@@ -58,6 +58,10 @@ ENV PORTAL_HOME=/
 # This file is empty. It has to be overridden by bind mounting the actual application.properties
 RUN touch /application.properties
 
+# Make image directory
+RUN mkdir /uploaded_images
+
+
 # Copy the rest of the application code to /app
 COPY app/ /app/
 

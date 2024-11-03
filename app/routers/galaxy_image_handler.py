@@ -1,17 +1,20 @@
 import os
+import logging
 from fastapi import APIRouter, UploadFile, File, HTTPException, Request, Form
 from fastapi.responses import FileResponse
 
 router = APIRouter()
+logger = logging.getLogger(__name__)
 
-UPLOAD_DIRECTORY = "./uploaded_images"
+
+UPLOAD_DIRECTORY = "/uploaded_images"
 os.makedirs(UPLOAD_DIRECTORY, exist_ok=True)
 
 
 @router.post("/upload-image/")
 async def upload_image(request: Request, file: UploadFile = File(...), overwrite: bool = Form(False)):
-    file_location = os.path.join(UPLOAD_DIRECTORY, file.filename)
-    image_name = os.path.basename(file_location)
+    image_name = os.path.basename(file.filename)
+    file_location = os.path.join(UPLOAD_DIRECTORY, image_name)
 
     if os.path.exists(file_location):
         if not overwrite:
@@ -19,8 +22,11 @@ async def upload_image(request: Request, file: UploadFile = File(...), overwrite
                                 detail=f"Image named '{image_name}' already exists. Set overwrite to true to replace it.")
         else:
             message = f"file '{file.filename}' overwritten at '{file_location}'"
+            logger.info(message)
+
     else:
         message = f"file '{file.filename}' saved at '{file_location}'"
+        logger.info(message)
 
     with open(file_location, "wb+") as file_object:
         file_object.write(file.file.read())
