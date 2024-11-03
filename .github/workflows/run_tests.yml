@@ -34,4 +34,4 @@ jobs:
         CBIOPORTAL_URL: http://fake_cbioportal_url
         GALAXY_URL: http://fake_galaxy_url
       run: |
-        python -m unittest discover -s tests
+        pytest

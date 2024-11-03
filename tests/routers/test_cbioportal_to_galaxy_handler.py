@@ -2,7 +2,7 @@ import pytest
 from fastapi import HTTPException
 from requests.exceptions import ConnectionError
 from unittest.mock import patch, MagicMock
-from app.routers.cbioportal_to_galaxy_handler import validate_and_fix_url, get_galaxy_instance, export_to_galaxy
+from routers.cbioportal_to_galaxy_handler import validate_and_fix_url, get_galaxy_instance, export_to_galaxy
 
 def test_validate_and_fix_url_missing_scheme():
     with pytest.raises(ValueError, match="Missing scheme in URL:"):

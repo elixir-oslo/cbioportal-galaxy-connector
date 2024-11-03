@@ -2,7 +2,7 @@ from io import StringIO
 
 import pytest
 from fastapi.testclient import TestClient
-from app.routers.galaxy_to_cbioportal_handler import merge_data_timeline, export_timeline_to_cbioportal, router
+from routers.galaxy_to_cbioportal_handler import merge_data_timeline, export_timeline_to_cbioportal, router
 import pandas as pd
 from unittest.mock import patch, mock_open
 import os
