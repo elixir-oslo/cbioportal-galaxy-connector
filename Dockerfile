@@ -65,6 +65,9 @@ RUN mkdir /uploaded_images
 # Copy the rest of the application code to /app
 COPY app/ /app/
 
+# Add app to python path
+ENV PYTHONPATH=/app:$PYTHONPATH
+
 # Copy the entrypoint script to /app
 COPY entrypoint.sh /entrypoint.sh
 
