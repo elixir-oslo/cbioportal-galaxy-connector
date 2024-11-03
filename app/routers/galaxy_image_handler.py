@@ -37,3 +37,12 @@ async def get_image(image_name: str):
     if not os.path.exists(file_location):
         raise HTTPException(status_code=404, detail="Image not found")
     return FileResponse(file_location)
+
+
+@router.delete("/images/{image_name}")
+async def delete_image(image_name: str):
+    file_location = os.path.join(UPLOAD_DIRECTORY, image_name)
+    if not os.path.exists(file_location):
+        raise HTTPException(status_code=404, detail="Image not found")
+    os.remove(file_location)
+    return {"detail": f"Image '{image_name}' deleted successfully"}
