@@ -23,6 +23,6 @@ app.include_router(galaxy_to_cbioportal_handler.router)
 # Get environment variables and display then
 dict_env_vars = get_env_vars()
 
-logger.info(f"Using study directory: {dict_env_vars['study_directory_path']}")
-logger.info(f"Using Galaxy URL: {dict_env_vars['galaxy_url']}")
-logger.info(f"Using cBioPortal URL: {dict_env_vars['cbioportal_url']}")
+# logger.info(f"Using study directory: {dict_env_vars['study_directory_path']}")
+# logger.info(f"Using Galaxy URL: {dict_env_vars['galaxy_url']}")
+# logger.info(f"Using cBioPortal URL: {dict_env_vars['cbioportal_url']}")
