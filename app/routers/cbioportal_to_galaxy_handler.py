@@ -1,6 +1,6 @@
 from typing import Dict
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, HTTPException, Request, Depends
 import logging
 import time
 from bioblend.galaxy import GalaxyInstance
@@ -8,6 +8,9 @@ from requests.exceptions import ConnectionError
 from datetime import datetime
 import tempfile
 from urllib.parse import urlparse
+
+from app.dependencies import get_env_vars
+
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -49,8 +52,8 @@ def upload_data_string(galaxy_instance: GalaxyInstance, history_id: str, data_st
         upload_info = galaxy_instance.tools.upload_file(tmp_file_path, history_id, file_name=file_name)
     return upload_info
 
-@router.post("/export-to-galaxy")
-async def export_to_galaxy(request: Request, galaxy_url: str) -> dict:
+@router.post("/export-to-galaxy/")
+async def export_to_galaxy(request: Request, env_vars: dict = Depends(get_env_vars)) -> dict:
     try:
         data = await request.json()
         logger.debug(f"Received data: {data}")
@@ -59,6 +62,7 @@ async def export_to_galaxy(request: Request, galaxy_url: str) -> dict:
         galaxy_history_name = data.get('galaxyHistoryName')
         cbioportal_study_id = data.get('studyId')
         cbioportal_case_id = data.get('caseId')
+        galaxy_url = env_vars['galaxy_url']
 
         if not galaxy_token or not galaxy_history_name or 'data' not in data:
             logger.error("Missing required fields in the request.")

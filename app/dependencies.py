@@ -24,5 +24,6 @@ def get_env_vars():
     return {
         "study_directory_path": study_directory_path.strip(),
         "cbioportal_url": cbioportal_url.strip(),
-        "api_key": api_key.strip()
+        "api_key": api_key.strip(),
+        "galaxy_url": galaxy_url.strip()
     }
