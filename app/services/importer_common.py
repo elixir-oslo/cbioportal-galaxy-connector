@@ -1,3 +1,5 @@
+import os
+import re
 import subprocess
 import logging
 from fastapi import HTTPException
@@ -25,10 +27,10 @@ def clear_cache_cbioportal(cbioportal_url: str, api_key: str) -> Dict[str, str]:
         raise HTTPException(status_code=500, detail=str(e))
 
 
-def incremental_load_data_to_cbioportal(study_id_directory_path: str, cbioportal_url: str) -> Dict[str, str]:
+def load_data_to_cbioportal(study_id_directory_path: str, cbioportal_url: str, incremental: bool = False) -> Dict[str, str]:
     try:
         command = ["python", "/scripts/importer/metaImport.py",
-                   "-d", study_id_directory_path,
+                   "-d" if incremental else "-s", study_id_directory_path,
                    "-u", cbioportal_url,
                    "-o"]
 
@@ -43,3 +45,33 @@ def incremental_load_data_to_cbioportal(study_id_directory_path: str, cbioportal
     except Exception as e:
         logger.error(f"An error occurred: {e}")
         raise HTTPException(status_code=500, detail=str(e))
+
+
+def get_study_directory(study_id: str, path_to_study: str) -> str:
+    list_dir = []
+    pattern = re.compile(rf"^cancer_study_identifier: {re.escape(study_id)}$")
+
+    # Get list directories in the study directory
+    for file in os.listdir(path_to_study):
+        d = os.path.join(path_to_study, file)
+        if os.path.isdir(d):
+            # Only append if a file meta_study.txt is present with the correct study_id
+            try:
+                with open(os.path.join(d, "meta_study.txt")) as f:
+                    for line in f:
+                        if pattern.match(line.strip()):
+                            list_dir.append(d)
+                            break
+            except FileNotFoundError:
+                pass
+
+    if len(list_dir) == 0:
+        logger.error(f"No directory found for study {study_id} in {path_to_study}")
+        raise FileNotFoundError(f"No directory found for study {study_id} in {path_to_study}")
+    elif len(list_dir) > 1:
+        logger.error(f"Multiple directories found for study {study_id} in {path_to_study}")
+        raise ValueError(f"Multiple directories found for study {study_id} in {path_to_study}")
+
+    logger.info(f"Study directory found: {list_dir[0]}")
+
+    return list_dir[0]
