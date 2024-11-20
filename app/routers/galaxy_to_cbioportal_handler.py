@@ -59,7 +59,8 @@ async def export_timeline_to_cbioportal(request: Request, env_vars: dict = Depen
             raise HTTPException(status_code=400,
                                 detail="Missing required fields: dataContent, metaContent, caseId, or studyId")
 
-        study_id_directory_path = str(os.path.join(env_vars['study_directory_path'], 'incremental_import', study_id))
+        # study_id_directory_path = str(os.path.join(env_vars['study_directory_path'], 'incremental_import', study_id))
+        study_id_directory_path = get_study_directory(study_id, env_vars['study_directory_path'])
         meta_outfile_path = os.path.join(study_id_directory_path, f"meta_timeline_{suffix}.txt")
         data_outfile_path = os.path.join(study_id_directory_path, f"data_timeline_{suffix}.txt")
 
@@ -67,11 +68,12 @@ async def export_timeline_to_cbioportal(request: Request, env_vars: dict = Depen
 
         os.makedirs(study_id_directory_path, exist_ok=True)
 
+        # Write the data and meta files to incremental_import directory
         df.to_csv(data_outfile_path, sep='\t', index=False)
         with open(meta_outfile_path, 'w') as f:
             f.write(meta_content)
 
-        load_message = load_data_to_cbioportal(study_id_directory_path, env_vars['cbioportal_url'], incremental=True)
+        load_message = load_data_to_cbioportal(study_id_directory_path, env_vars['cbioportal_url'], incremental=False)
         logger.debug(f"Load message: {load_message}")
 
         clear_cache_message = clear_cache_cbioportal(env_vars['cbioportal_url'], env_vars['api_key'])
@@ -119,7 +121,7 @@ async def export_ressource_to_cbioportal(request: Request, env_vars: dict = Depe
         with open(meta_patient_outfile_path, 'w') as f:
             f.write(meta_patient_content)
 
-        load_message = load_data_to_cbioportal(study_id_directory_path, env_vars['cbioportal_url'], incremental = False)
+        load_message = load_data_to_cbioportal(study_id_directory_path, env_vars['cbioportal_url'], incremental=False)
         logger.debug(f"Load message: {load_message}")
 
         clear_cache_message = clear_cache_cbioportal(env_vars['cbioportal_url'], env_vars['api_key'])
