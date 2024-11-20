@@ -71,7 +71,7 @@ async def export_timeline_to_cbioportal(request: Request, env_vars: dict = Depen
         with open(meta_outfile_path, 'w') as f:
             f.write(meta_content)
 
-        load_message = load_data_to_cbioportal(study_id_directory_path, env_vars['cbioportal_url'], incremental = True)
+        load_message = load_data_to_cbioportal(study_id_directory_path, env_vars['cbioportal_url'], incremental=True)
         logger.debug(f"Load message: {load_message}")
 
         clear_cache_message = clear_cache_cbioportal(env_vars['cbioportal_url'], env_vars['api_key'])
