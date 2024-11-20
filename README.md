@@ -42,12 +42,35 @@ cBioPortal Galaxy Connector is a Python-based application that allows users to e
 
 ## Configuration
 
+### Environment Variables
+
+- `GALAXY_URL`: Specify the Galaxy instance URL.
+- `LIMIT_IP`: Set to `true` to enable IP filtering (default is `false`).
+- `STUDY_DIRECTORY`: Path to the study directory (default is `/study`).
+- `CBIOPORTAL_URL`: URL of the cBioPortal instance.
+- `CBIOPORTAL_CACHE_API_KEY`: API key for cBioPortal cache.
+
 Set the `GALAXY_URL` environment variable to specify the Galaxy instance URL:
 ```sh
 export GALAXY_URL='http://your-galaxy-instance-url'
 export PYLONE_API_KEY='your-pyclone-api-key'
 export PYLONE_DATA_PATH='/path/to/your/data'
+export LIMIT_IP='true'
 ```
+
+### IP Filtering
+The application includes middleware to limit access based on IP addresses. This feature can be enabled or disabled using the LIMIT_IP environment variable.
+- When LIMIT_IP is set to true, IP filtering is applied.
+- When LIMIT_IP is set to false (default), IP filtering is bypassed.
+
+#### IP Filtering Rules
+- GET /images/{image_name}: Accessible from anywhere.
+- DELETE /images/{image_name}: Restricted by IP.
+- /export-to-galaxy/: Accessible from anywhere. 
+- Other endpoints: Restricted by IP.
+
+#### Allowed IPs and Subnet
+- ALLOWED_IPS: List of allowed IP addresses (default is ["127.0.0.1"]).
 
 ## Usage
 
