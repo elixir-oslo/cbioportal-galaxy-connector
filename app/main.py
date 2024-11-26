@@ -5,6 +5,10 @@ from ipaddress import ip_network, ip_address
 from routers import galaxy_image_handler, cbioportal_to_galaxy_handler, galaxy_to_cbioportal_handler
 from dependencies import get_env_vars
 from utils.logger import setup_logger
+from app.middleware.https_redirect import CustomHTTPSRedirectMiddleware
+import os
+
+list_unrestricted_endpoints = ["/export-to-galaxy/"]
 
 logger = setup_logger("uvicorn.error")
 app = FastAPI()
@@ -25,15 +29,14 @@ LIMIT_IP = os.getenv("LIMIT_IP", "false").lower() == "true"
 async def ip_filter_middleware(request: Request, call_next):
     if LIMIT_IP:
         # Allow access to images and export-to-galaxy endpoint without restricting IP
-        if not (request.url.path.startswith(
-                "/images/") and request.method == "GET") and request.url.path != "/export-to-galaxy/":
+        if not (request.url.path.startswith("/images/") and request.method == "GET") and request.url.path not in list_unrestricted_endpoints:
             client_ip = ip_address(request.client.host)
             if client_ip not in ALLOWED_IPS and (ALLOWED_SUBNET is None or client_ip not in ALLOWED_SUBNET):
                 raise HTTPException(status_code=403, detail="Access forbidden: IP not allowed")
     response = await call_next(request)
     return response
 
-
+# Configure CORS settings
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
