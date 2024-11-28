@@ -1,4 +1,3 @@
-import os
 from fastapi import FastAPI, Request, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from ipaddress import ip_network, ip_address
@@ -24,6 +23,16 @@ else:
 # Get the LIMIT_IP environment variable (default to false)
 LIMIT_IP = os.getenv("LIMIT_IP", "false").lower() == "true"
 
+# Get the PROD environment variable (default to false)
+PROD = os.getenv("PROD", "false").lower() == "true"
+SSL_CERTFILE_NAME = os.getenv("SSL_CERTFILE_NAME")
+SSL_KEYFILE_NAME = os.getenv("SSL_KEYFILE_NAME")
+
+
+# Add custom HTTPS redirect middleware if running in production
+if PROD:
+    app.add_middleware(CustomHTTPSRedirectMiddleware)
+    logger.info(f"Added HTTPS redirect middleware with /app/ssl/{SSL_CERTFILE_NAME} as the certificate path and /app/ssl/{SSL_KEYFILE_NAME} as the key path")
 
 @app.middleware("http")
 async def ip_filter_middleware(request: Request, call_next):
