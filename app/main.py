@@ -8,7 +8,7 @@ from utils.logger import setup_logger
 from app.middleware.https_redirect import CustomHTTPSRedirectMiddleware
 import os
 
-list_unrestricted_endpoints = ["/export-to-galaxy/"]
+list_unrestricted_endpoints = ["/export-to-galaxy/", "/galaxy-workflow/"]
 
 logger = setup_logger("uvicorn.error")
 app = FastAPI()

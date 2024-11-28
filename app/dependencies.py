@@ -6,6 +6,7 @@ def get_env_vars():
     cbioportal_url = os.getenv('CBIOPORTAL_URL')
     galaxy_url = os.getenv('GALAXY_URL')
     api_key = os.getenv('CBIOPORTAL_CACHE_API_KEY')
+    galaxy_workflow_name = os.getenv('GALAXY_WORKFLOW_NAME', None)
 
 
     missing_vars = []
@@ -25,5 +26,6 @@ def get_env_vars():
         "study_directory_path": study_directory_path.strip(),
         "cbioportal_url": cbioportal_url.strip(),
         "api_key": api_key.strip(),
-        "galaxy_url": galaxy_url.strip()
+        "galaxy_url": galaxy_url.strip(),
+        "galaxy_workflow_name": galaxy_workflow_name.strip()
     }
