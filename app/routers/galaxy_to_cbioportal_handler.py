@@ -1,13 +1,13 @@
 from fastapi import APIRouter, HTTPException, Request, Depends
 import os
-import logging
+from app.utils.logger import setup_logger
 from io import StringIO
 import pandas as pd
 from app.services.importer_common import clear_cache_cbioportal, load_data_to_cbioportal, get_study_directory
 from app.dependencies import get_env_vars
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 def merge_data(new_data: str, data_file_path: str, key_columns: list) -> pd.DataFrame:

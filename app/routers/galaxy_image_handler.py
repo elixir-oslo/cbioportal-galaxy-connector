@@ -1,10 +1,10 @@
 import os
-import logging
+from app.utils.logger import setup_logger
 from fastapi import APIRouter, UploadFile, File, HTTPException, Request, Form
 from fastapi.responses import FileResponse
 
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
 
 
 UPLOAD_DIRECTORY = "/uploaded_images"

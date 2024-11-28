@@ -1,7 +1,7 @@
 from typing import Dict
 
 from fastapi import APIRouter, HTTPException, Request, Depends
-import logging
+from app.utils.logger import setup_logger
 import time
 from bioblend.galaxy import GalaxyInstance
 from requests.exceptions import ConnectionError
@@ -11,9 +11,9 @@ from urllib.parse import urlparse
 
 from app.dependencies import get_env_vars
 
-
 router = APIRouter()
-logger = logging.getLogger(__name__)
+logger = setup_logger(__name__)
+
 
 def validate_and_fix_url(url: str) -> str:
     parsed = urlparse(url)
