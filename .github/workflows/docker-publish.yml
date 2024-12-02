@@ -40,8 +40,10 @@ jobs:
         push: true
         platforms: linux/amd64, linux/arm64
         tags: |
-          ghcr.io/${{ env.REPO_OWNER }}/cbioportal-galaxy-connector:latest
-          ghcr.io/${{ env.REPO_OWNER }}/cbioportal-galaxy-connector:${{ env.TAG_VERSION }}
+#          ghcr.io/${{ env.REPO_OWNER }}/cbioportal-galaxy-connector:latest
+#          ghcr.io/${{ env.REPO_OWNER }}/cbioportal-galaxy-connector:${{ env.TAG_VERSION }}
+          ghcr.io/jcheneby/cbioportal-galaxy-connector:latest
+          ghcr.io/jcheneby/cbioportal-galaxy-connector:${{ env.TAG_VERSION }}
 
     - name: Log out from GitHub Container Registry
       run: docker logout ghcr.io

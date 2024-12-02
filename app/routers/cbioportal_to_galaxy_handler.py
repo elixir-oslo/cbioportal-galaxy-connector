@@ -99,7 +99,12 @@ async def export_to_galaxy(request: Request, env_vars: dict = Depends(get_env_va
         history_id = get_or_create_galaxy_history(gi, data.get('galaxyHistoryName'))
         logger.info(f"Working with history ID: {history_id}")
 
-        upload_info = upload_data_to_galaxy(gi, history_id, data.get('data'), data.get('studyId'), data.get('caseId'))
+        data_header, data_body = data.get('data').split('\n', 1)
+        fixed_header = data_header.replace(' ', '_').lower()
+
+        data_modified = f"{fixed_header}\n{data_body}"
+
+        upload_info = upload_data_to_galaxy(gi, history_id, data_modified, data.get('studyId'), data.get('caseId'))
         logger.info(f"Uploaded: {upload_info['outputs'][0]['name']}, ID: {upload_info['outputs'][0]['id']}")
 
         return {"message": "Data received successfully"}
@@ -152,35 +157,38 @@ async def galaxy_workflow(request: Request, env_vars: dict = Depends(get_env_var
 
 
 
-        inputs = {
-            '0': {  # Step ID in the workflow
-                'src': 'hda',  # Source type: hda (history dataset)
-                'id': upload_info['outputs'][0]['id']  # Dataset ID
-            }
-        }
+
 
         # get file content from uploaded file
         file_content = gi.datasets.show_dataset(upload_info['outputs'][0]['id'])
-        logger.info(f"File content: {file_content}")
-        logger.info(f"File uploaded: {upload_info}")
+        logger.debug(f"File content: {file_content}")
+        logger.debug(f"File uploaded: {upload_info}")
 
-        logger.info(f"inputs: {inputs}")
 
         # Fetch the workflow details
         workflow = gi.workflows.show_workflow(workflow_id)
-        inputs = workflow['inputs']
+        workflow_inputs = workflow['inputs']
 
         # Assuming the workflow has a single input we want to map to our uploaded dataset
-        # input_id = list(inputs.keys())[0]
-        logger.info(f"Input ID: {inputs}")
-
+        logger.info(f"Input: {workflow_inputs}")
+        logger.info(f"Workflow: {workflow}")
+        dict_inputs = {}
+        for workflow_input in workflow_inputs:
+            dict_inputs[workflow_input] = {
+                'src': 'hda',
+                'id': upload_info['outputs'][0]['id'],
+                'label': workflow_inputs[workflow_input]['label'],
+                'uuid': workflow_inputs[workflow_input]['uuid']
+            }
 
 
         # Bioblend, invoke workflow
         workflow_info = gi.workflows.invoke_workflow(workflow_id,
-                                                     inputs=inputs,
+                                                     inputs=dict_inputs,
                                                      history_id=history_id)
-        logger.info(f"Workflow info: {workflow_info}")
+        logger.debug(f"Workflow info: {workflow_info}")
+
+
 
         return {"message": "Data received successfully"}
 

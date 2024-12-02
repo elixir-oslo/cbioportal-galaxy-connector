@@ -27,5 +27,5 @@ def get_env_vars():
         "cbioportal_url": cbioportal_url.strip(),
         "api_key": api_key.strip(),
         "galaxy_url": galaxy_url.strip(),
-        "galaxy_workflow_name": galaxy_workflow_name.strip()
+        "galaxy_workflow_name": galaxy_workflow_name.strip() if galaxy_workflow_name else None
     }
