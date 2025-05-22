@@ -1,2 +1,9 @@
 uploaded_images/
 .idea/
+__pycache__
+.codiumai
+.*_cache/
+.DS_Store
+.env
+app/ssl
+.vscode/

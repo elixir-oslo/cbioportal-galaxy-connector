@@ -1,6 +1,7 @@
 from typing import Dict
 
 from fastapi import APIRouter, HTTPException, Request, Depends
+from app.services.xnat_common import get_experiment_label_from_xnat, get_project_label_from_xnat
 from app.utils.logger import setup_logger
 import time
 from bioblend.galaxy import GalaxyInstance
@@ -86,6 +87,37 @@ def upload_data_to_galaxy(gi: GalaxyInstance, history_id: str, data: str, cbiopo
         raise ValueError("Missing data in the request.")
     return upload_data_string(gi, history_id, data, cbioportal_study_id, cbioportal_case_id)
 
+def run_xnat_importer_tool(galaxy_instance: GalaxyInstance, history_id: str, cbioportal_study_id: str, cbioportal_case_id: str, xnat_experiment_id: str) -> dict:
+    
+    xnat_importer_tool_id = "xnat_download"
+    dict_inputs = {
+        'project': cbioportal_study_id,
+        'subject': cbioportal_case_id,
+        'experiment': xnat_experiment_id,
+        'resource': "DICOM"
+    }
+    logger.info(f"Running XNAT importer tool with ID: {xnat_importer_tool_id}")
+    logger.info(f"History ID: {history_id}")
+
+    galaxy_instance.tools.run_tool(
+        tool_id=xnat_importer_tool_id,
+        history_id=history_id,
+        tool_inputs=dict_inputs
+    )
+
+def upload_resource_to_galaxy(galaxy_instance: GalaxyInstance, history_id: str, resource_url: str, cbioportal_study_id: str,
+                          cbioportal_case_id: str, env_vars: dict) -> dict:
+    if "viewer.imaging.datacommons" in resource_url:
+        cbioportal_study_id = "eosc4cancer_tcga_coad"
+        experiment_id = get_experiment_label_from_xnat(resource_url, cbioportal_study_id, cbioportal_case_id, env_vars)
+        project_id = get_project_label_from_xnat(cbioportal_study_id=cbioportal_study_id, env_vars=env_vars)
+        run_xnat_importer_tool(galaxy_instance, history_id, project_id, cbioportal_case_id, experiment_id)
+    else:
+        upload_info = upload_data_to_galaxy(galaxy_instance, history_id, resource_url + "\n", cbioportal_study_id, cbioportal_case_id)
+        logger.info(f"Uploaded: {upload_info['outputs'][0]['name']}, ID: {upload_info['outputs'][0]['id']}")
+        
+        return {"message": "Data received successfully"}
+    
 
 @router.post("/export-to-galaxy/")
 async def export_to_galaxy(request: Request, env_vars: dict = Depends(get_env_vars)) -> dict:
@@ -98,14 +130,19 @@ async def export_to_galaxy(request: Request, env_vars: dict = Depends(get_env_va
 
         history_id = get_or_create_galaxy_history(gi, data.get('galaxyHistoryName'))
         logger.info(f"Working with history ID: {history_id}")
+        
+        # Check if data is an url
+        if data.get('data').startswith('http'):
+            upload_resource_to_galaxy(gi, history_id, data.get('data'), data.get('studyId'), data.get('caseId'), env_vars)
+            # pass
+        else:
+            data_header, data_body = data.get('data').split('\n', 1)
+            fixed_header = data_header.replace(' ', '_').lower()
 
-        data_header, data_body = data.get('data').split('\n', 1)
-        fixed_header = data_header.replace(' ', '_').lower()
-
-        data_modified = f"{fixed_header}\n{data_body}"
-
-        upload_info = upload_data_to_galaxy(gi, history_id, data_modified, data.get('studyId'), data.get('caseId'))
-        logger.info(f"Uploaded: {upload_info['outputs'][0]['name']}, ID: {upload_info['outputs'][0]['id']}")
+            data_modified = f"{fixed_header}\n{data_body}"
+            
+            upload_info = upload_data_to_galaxy(gi, history_id, data_modified, data.get('studyId'), data.get('caseId'))
+            logger.info(f"Uploaded: {upload_info['outputs'][0]['name']}, ID: {upload_info['outputs'][0]['id']}")
 
         return {"message": "Data received successfully"}
     except ConnectionError as e:
