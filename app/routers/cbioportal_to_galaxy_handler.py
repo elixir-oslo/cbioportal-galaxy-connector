@@ -94,7 +94,9 @@ def run_xnat_importer_tool(galaxy_instance: GalaxyInstance, history_id: str, cbi
         'project': cbioportal_study_id,
         'subject': cbioportal_case_id,
         'experiment': xnat_experiment_id,
-        'resource': "DICOM"
+        'resource': "DICOM",
+        'scan': '^(?!.*Topogram).*',
+        'regex': True,
     }
     logger.info(f"Running XNAT importer tool with ID: {xnat_importer_tool_id}")
     logger.info(f"History ID: {history_id}")
@@ -108,7 +110,7 @@ def run_xnat_importer_tool(galaxy_instance: GalaxyInstance, history_id: str, cbi
 def upload_resource_to_galaxy(galaxy_instance: GalaxyInstance, history_id: str, resource_url: str, cbioportal_study_id: str,
                           cbioportal_case_id: str, env_vars: dict) -> dict:
     if "viewer.imaging.datacommons" in resource_url:
-        cbioportal_study_id = "eosc4cancer_tcga_coad"
+        # cbioportal_study_id = "eosc4cancer_tcga_coad"
         experiment_id = get_experiment_label_from_xnat(resource_url, cbioportal_study_id, cbioportal_case_id, env_vars)
         project_id = get_project_label_from_xnat(cbioportal_study_id=cbioportal_study_id, env_vars=env_vars)
         run_xnat_importer_tool(galaxy_instance, history_id, project_id, cbioportal_case_id, experiment_id)
